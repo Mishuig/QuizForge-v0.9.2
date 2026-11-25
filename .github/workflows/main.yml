@@ -92,10 +92,8 @@ jobs:
             --add-data "client/ui;client/ui" \
             --add-data "fonts;fonts" \
             --hidden-import PyQt6.QtSvg \
-            --hidden-import admin.students_tab \
-            --hidden-import admin.tests_tab \
-            --hidden-import admin.results_tab \
-            --hidden-import admin \
+            --collect-submodules admin \
+            --collect-submodules core \
             --exclude-module tkinter \
             "${{ matrix.entry }}"
           ls -lh dist/
