@@ -77,13 +77,13 @@ class OptionRow(QWidget):
 
         self.remove_btn = QPushButton("✕")
         self.remove_btn.setFixedSize(40, 40)
-        self.remove_btn.setObjectName("iconButton")
+        self.remove_btn.setObjectName("dangerIconButton")
         self.remove_btn.setToolTip("Видалити варіант")
 
-        self.expand_btn = QPushButton("⤢")
+        self.expand_btn = QPushButton("✎")
         self.expand_btn.setFixedSize(40, 40)
         self.expand_btn.setObjectName("iconButton")
-        self.expand_btn.setToolTip("Розгорнути для редагування")
+        self.expand_btn.setToolTip("Редагувати")
         self.expand_btn.clicked.connect(self._expand)
 
         layout.addWidget(self.correct_cb)
@@ -306,7 +306,7 @@ class TestsTab(QWidget):
 
         self.q_text = QTextEdit()
         self.q_text.setPlaceholderText("Текст питання")
-        self.q_text.setMinimumHeight(110)
+        self.q_text.setMinimumHeight(70)
         q_right.addWidget(field("Текст питання", self.q_text))
 
         self.q_type = QComboBox()
@@ -348,8 +348,8 @@ class TestsTab(QWidget):
         options_scroll = QScrollArea()
         options_scroll.setWidgetResizable(True)
         options_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        options_scroll.setMinimumHeight(80)
-        options_scroll.setMaximumHeight(240)
+        options_scroll.setMinimumHeight(100)  # ~2 rows
+        options_scroll.setMaximumHeight(400)  # grow until needed
         holder = QWidget()
         self.options_container = QVBoxLayout(holder)
         self.options_container.setContentsMargins(0, 0, 0, 0)

@@ -77,6 +77,13 @@ class PasswordDialog(ThemedDialog):
         self.pass_edit.setEchoMode(QLineEdit.EchoMode.Password)
         self.pass_edit.setPlaceholderText("Пароль")
         self.pass_edit.returnPressed.connect(self._validate)
+        self._pw_visible = False
+        eye = self.pass_edit.addAction(
+            self.style().standardIcon(self.style().StandardPixmap.SP_TitleBarNormalButton),
+            QLineEdit.ActionPosition.TrailingPosition,
+        )
+        eye.triggered.connect(self._toggle_pw_visibility)
+        self._eye_action = eye
 
         toggle = QPushButton("Показати")
         toggle.setObjectName("ghostButton")
@@ -122,6 +129,14 @@ class PasswordDialog(ThemedDialog):
     def _fail(self, text: str) -> None:
         self.error.setText(text)
         self.error.show()
+
+
+    def _toggle_pw_visibility(self) -> None:
+        self._pw_visible = not self._pw_visible
+        mode = QLineEdit.EchoMode.Normal if self._pw_visible else QLineEdit.EchoMode.Password
+        self.pass_edit.setEchoMode(mode)
+        if hasattr(self, "pass2_edit"):
+            self.pass2_edit.setEchoMode(mode)
 
     def _validate(self) -> None:
         p1 = self.pass_edit.text()

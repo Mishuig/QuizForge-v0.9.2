@@ -534,6 +534,7 @@ class ResultsTab(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        try:
         narrow = self.width() < 700
         # Columns: 0=Ім'я, 1=Email, 2=Тест, 3=Бали, 4=%, 5=Час, 6=Порушення, 7=Статус
         if self.table.columnCount() > 6:

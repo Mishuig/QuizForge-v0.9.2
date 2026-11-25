@@ -622,6 +622,7 @@ class StudentsTab(QWidget):
 
     def resizeEvent(self, event):
         super().resizeEvent(event)
+        try:
         narrow = self.width() < 700
         # Hide "Спроб" (column 3) when narrow
         if self.table.columnCount() > 3:

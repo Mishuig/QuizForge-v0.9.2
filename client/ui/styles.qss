@@ -219,3 +219,17 @@ QPushButton#iconButton:hover {
     color: #FCA5A5;
     border-color: #FCA5A5;
 }
+
+
+QPushButton#dangerIconButton {
+    background-color: transparent;
+    border: 1px solid #7F2A33;
+    border-radius: 8px;
+    color: #FCA5A5;
+    font-size: 16px;
+}
+QPushButton#dangerIconButton:hover {
+    background-color: #3A1D22;
+    color: #F87171;
+    border-color: #F87171;
+}
