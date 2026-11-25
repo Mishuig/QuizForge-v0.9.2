@@ -1,10 +1,22 @@
-"""Тести додавання варіантів відповіді в редакторі питань."""
+"""Тести додавання варіантів відповіді в редакторі питань.
+
+Пропускаються, якщо PyQt6/GUI недоступні (CI без графічних бібліотек).
+"""
 
 import pytest
-from PyQt6.QtWidgets import QApplication
 
-# Ensure QApplication exists
-app = QApplication.instance() or QApplication([])
+# Перевіряємо доступність PyQt6
+try:
+    from PyQt6.QtWidgets import QApplication
+    app = QApplication.instance() or QApplication([])
+    PYQT_AVAILABLE = True
+except Exception:
+    PYQT_AVAILABLE = False
+
+pytestmark = pytest.mark.skipif(
+    not PYQT_AVAILABLE,
+    reason="PyQt6 або графічні бібліотеки недоступні"
+)
 
 
 def test_option_row_creation():
