@@ -1,0 +1,157 @@
+name: Portable Windows
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: portable-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  test:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pytest
+
+      - name: Run tests
+        run: python -m pytest tests/ -q --tb=short
+        env:
+          QT_QPA_PLATFORM: offscreen
+
+  build:
+    name: Build ${{ matrix.app }}
+    needs: test
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - app: Client
+            entry: client/main.py
+            icon: assets/logo-client.ico
+          - app: Admin
+            entry: admin/main.py
+            icon: assets/logo-admin.ico
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: pip
+
+      - name: Install dependencies
+        shell: bash
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt pyinstaller
+
+      - name: Build ${{ matrix.app }}
+        shell: bash
+        run: |
+          if [ ! -f "${{ matrix.entry }}" ]; then
+            echo "::error::Entry point ${{ matrix.entry }} not found"
+            exit 1
+          fi
+          if [ ! -f "${{ matrix.icon }}" ]; then
+            echo "::warning::Icon ${{ matrix.icon }} not found, building without icon"
+            ICON_ARG=""
+          else
+            ICON_ARG="--icon ${{ matrix.icon }}"
+          fi
+          pyinstaller --noconfirm --clean --onefile --windowed \
+            --name "QuizForge-${{ matrix.app }}" \
+            $ICON_ARG \
+            --paths . \
+            --add-data "assets;assets" \
+            --add-data "client/ui;client/ui" \
+            --add-data "fonts;fonts" \
+            --hidden-import PyQt6.QtSvg \
+            --exclude-module tkinter \
+            "${{ matrix.entry }}"
+          ls -lh dist/
+
+      - name: Upload exe
+        uses: actions/upload-artifact@v4
+        with:
+          name: exe-${{ matrix.app }}
+          path: dist/QuizForge-${{ matrix.app }}.exe
+          if-no-files-found: error
+          retention-days: 7
+
+  package:
+    name: Package portable
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [[ "${GITHUB_REF_TYPE}" == "tag" ]]; then
+            echo "version=${GITHUB_REF_NAME}" >> "$GITHUB_OUTPUT"
+          else
+            echo "version=dev-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Download builds
+        uses: actions/download-artifact@v4
+        with:
+          pattern: exe-*
+          merge-multiple: true
+          path: dl
+
+      - name: Assemble portable folder
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          NAME="QuizForge-Portable-Windows-${VERSION}"
+          mkdir -p "$NAME"
+          cp dl/QuizForge-Client.exe dl/QuizForge-Admin.exe "$NAME/"
+          cp config.json.example "$NAME/config.json"
+          cp README.md FIRST_RUN.md LICENSE "$NAME/" 2>/dev/null || true
+          cp -r assets fonts "$NAME/" 2>/dev/null || true
+          echo "$VERSION" > "$NAME/VERSION"
+          zip -r "${NAME}.zip" "$NAME"
+          sha256sum "${NAME}.zip" > "${NAME}.zip.sha256"
+          echo "ZIP=${NAME}.zip" >> "$GITHUB_ENV"
+          echo "SHA=${NAME}.zip.sha256" >> "$GITHUB_ENV"
+
+      - name: Upload portable archive
+        uses: actions/upload-artifact@v4
+        with:
+          name: QuizForge-Portable-${{ steps.ver.outputs.version }}
+          path: |
+            ${{ env.ZIP }}
+            ${{ env.SHA }}
+          retention-days: 30
+
+      - name: Create GitHub Release
+        if: github.ref_type == 'tag'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            ${{ env.ZIP }}
+            ${{ env.SHA }}
+          generate_release_notes: true
+          draft: false
